@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>만화 베스트셀러 | IP제품팀</title>
+<style>
+:root {
+  --bg: #0f1117; --card: #1e2130; --border: #2d3148;
+  --text: #e2e8f0; --muted: #64748b; --sub: #94a3b8;
+  --yes: #4f46e5; --ala: #0ea5e9; --kyo: #10b981;
+  --gold: #f59e0b; --accent: #6366f1;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* 헤더 */
+header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+header h1 { font-size: 17px; font-weight: 700; }
+header p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.last-update { font-size: 11px; color: var(--muted); text-align: right; }
+
+/* 탭 */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); }
+.tab { padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; transition: .15s; white-space: nowrap; }
+.tab:hover { color: var(--sub); }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* 서점 선택 */
+.store-bar { display: flex; gap: 6px; padding: 14px 24px 0; }
+.sbtn { padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--muted); transition: .15s; }
+.sbtn:hover { color: var(--text); }
+.sbtn.yes.on { background: var(--yes); border-color: var(--yes); color: #fff; }
+.sbtn.ala.on { background: var(--ala); border-color: var(--ala); color: #fff; }
+.sbtn.kyo.on { background: var(--kyo); border-color: var(--kyo); color: #fff; }
+.sbtn.all.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+main { padding: 16px 24px 40px; }
+
+/* KPI */
+.kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+.kpi { background: var(--card); border-radius: 10px; padding: 14px; border: 1px solid var(--border); }
+.kpi .lbl { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+.kpi .val { font-size: 20px; font-weight: 700; line-height: 1.2; }
+.kpi .sub { font-size: 10px; color: var(--sub); margin-top: 3px; }
+
+/* 그리드 */
+.g2 { display: grid; grid-template-columns: 3fr 2fr; gap: 12px; margin-bottom: 12px; }
+.g3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 12px; }
+.card { background: var(--card); border-radius: 10px; padding: 14px; border: 1px solid var(--border); }
+.card-title { font-size: 12px; font-weight: 600; color: var(--sub); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.ctag { font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 600; }
+.ctag-yes { background: rgba(79,70,229,.2); color: #818cf8; }
+.ctag-ala { background: rgba(14,165,233,.2); color: #38bdf8; }
+.ctag-kyo { background: rgba(16,185,129,.2); color: #34d399; }
+
+/* 책 리스트 */
+.book-list { list-style: none; }
+.book-list li { display: flex; align-items: flex-start; gap: 7px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.book-list li:last-child { border-bottom: none; }
+.brank { width: 20px; font-size: 10px; font-weight: 700; color: var(--muted); flex-shrink: 0; padding-top: 2px; text-align: center; }
+.brank.gold { color: var(--gold); }
+.brank.silver { color: #94a3b8; }
+.brank.bronze { color: #b45309; }
+.binfo { flex: 1; min-width: 0; }
+.btitle { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bmeta { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.bgoods { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.gtag { font-size: 9px; padding: 1px 5px; border-radius: 7px; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.gt-goods { background: rgba(245,158,11,.12); color: #fcd34d; border: 1px solid rgba(245,158,11,.2); }
+.gt-event { background: rgba(99,102,241,.12); color: #a5b4fc; border: 1px solid rgba(99,102,241,.2); }
+.gt-limit { background: rgba(249,115,22,.12); color: #fb923c; border: 1px solid rgba(249,115,22,.2); }
+.gt-new  { background: rgba(74,222,128,.1); color: #4ade80; border: 1px solid rgba(74,222,128,.2); }
+.bchange { font-size: 10px; font-weight: 700; width: 28px; text-align: center; flex-shrink: 0; padding-top: 2px; }
+.up { color: #4ade80; }
+.dn { color: #f87171; }
+.new-ch { color: #60a5fa; }
+.flat { color: var(--muted); }
+
+/* 공통 테이블 */
+.overlap-tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
+.overlap-tbl th { text-align: left; padding: 5px 7px; color: var(--muted); font-size: 10px; border-bottom: 1px solid var(--border); }
+.overlap-tbl td { padding: 6px 7px; border-bottom: 1px solid #1a1e2d; vertical-align: top; }
+.overlap-tbl tr:last-child td { border-bottom: none; }
+.pos { font-weight: 700; }
+.p-yes { color: #818cf8; }
+.p-ala { color: #38bdf8; }
+.p-kyo { color: #34d399; }
+
+/* 굿즈 카드 */
+.gcard { background: var(--card); border-radius: 10px; padding: 12px 14px; border: 1px solid var(--border); margin-bottom: 8px; }
+.gcard-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.gcard-rank { font-size: 10px; font-weight: 700; color: var(--muted); width: 24px; flex-shrink: 0; }
+.gcard-name { font-size: 13px; font-weight: 600; flex: 1; }
+.gcard-pub { font-size: 10px; color: var(--muted); }
+.gcard-stores { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.gstore { background: #161824; border-radius: 8px; padding: 9px; border: 1px solid var(--border); }
+.gstore-name { font-size: 10px; font-weight: 700; margin-bottom: 5px; }
+.sn-yes { color: #818cf8; }
+.sn-ala { color: #38bdf8; }
+.sn-kyo { color: #34d399; }
+.gitem { font-size: 10px; color: var(--sub); padding: 2px 0; border-bottom: 1px solid #1a1e2d; line-height: 1.4; }
+.gitem:last-child { border-bottom: none; }
+.gitem.ev { color: #a5b4fc; }
+.gitem.lm { color: #fb923c; }
+.gitem.no { color: var(--muted); font-style: italic; }
+
+/* 로딩 */
+.loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; gap: 12px; color: var(--muted); }
+.spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error-msg { text-align: center; padding: 40px; color: #f87171; }
+
+@media(max-width:768px){ .kpis,.g2,.g3,.gcard-stores{grid-template-columns:1fr;} .tabs{overflow-x:auto;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📚 만화 베스트셀러 · 굿즈 현황</h1>
+    <p>예스24 · 알라딘 · 교보문고 | 자동 수집 (매시간)</p>
+  </div>
+  <div class="last-update" id="lastUpdate">로딩 중...</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('rank')">📊 순위</div>
+  <div class="tab" onclick="switchTab('goods')">🎁 굿즈</div>
+  <div class="tab" onclick="switchTab('compare')">🔍 비교</div>
+</div>
+
+<div id="app">
+  <div class="loading"><div class="spinner"></div><span>데이터 불러오는 중...</span></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// 상태
+// ─────────────────────────────────────────
+var S = {
+  data: null,        // history.json 최신 엔트리
+  tab: 'rank',
+  store: 'all'
+};
+
+// ─────────────────────────────────────────
+// 유틸
+// ─────────────────────────────────────────
+function norm(t) {
+  return (t||'').replace(/\s+/g,' ').replace(/[\[\]()（）]/g,'')
+    .replace(/\s*(특별판|특전판|한정판|더블특전판|트리플특전판|완전판)\s*/gi,'')
+    .replace(/[-–]\s*.{0,40}$/,'').trim().slice(0,20);
+}
+function rankCls(i) { return i===0?'gold':i===1?'silver':i===2?'bronze':''; }
+function changeCls(ch) {
+  if (!ch || ch==='–') return 'flat';
+  if (ch==='NEW') return 'new-ch';
+  if (ch.startsWith('↑')) return 'up';
+  if (ch.startsWith('↓')) return 'dn';
+  return 'flat';
+}
+
+function parseGoodsFromTitle(titleRaw) {
+  var dash = titleRaw.indexOf(' - ');
+  if (dash === -1) return [];
+  var after = titleRaw.slice(dash + 3);
+  return after.split(/\s*\+\s*|\s*,\s*/).map(p=>p.trim()).filter(p=>p.length>2&&p.length<80);
+}
+function catGoods(t) {
+  if (/한정|특전|초판|단독/i.test(t)) return 'limit';
+  if (/이벤트|사은품|증정|출간\s*기념/i.test(t)) return 'event';
+  return 'goods';
+}
+function goodsTagHtml(text, maxLen) {
+  maxLen = maxLen || 30;
+  var type = catGoods(text);
+  var cls = type==='limit'?'gt-limit':type==='event'?'gt-event':'gt-goods';
+  return '<span class="gtag '+cls+'" title="'+text+'">'+text.slice(0,maxLen)+'</span>';
+}
+
+// ─────────────────────────────────────────
+// 데이터 로드
+// ─────────────────────────────────────────
+async function loadData() {
+  try {
+    var res = await fetch('history.json?_=' + Date.now());
+    var history = await res.json();
+    if (!history || !history.length) throw new Error('데이터 없음');
+    S.data = history[history.length - 1];
+    document.getElementById('lastUpdate').textContent = '수집: ' + S.data['수집시각'] + ' KST';
+    render();
+  } catch(e) {
+    document.getElementById('app').innerHTML = '<div class="error-msg">⚠️ 데이터를 불러올 수 없습니다.<br><small>GitHub Actions가 아직 실행되지 않았을 수 있어요.<br>저장소 → Actions 탭에서 워크플로를 수동 실행해보세요.</small></div>';
+  }
+}
+
+// ─────────────────────────────────────────
+// 공통 굿즈 맵 생성
+// ─────────────────────────────────────────
+function buildGoodsMap() {
+  var map = {};
+  var d = S.data['데이터'];
+  ['yes24','aladin','kyobo'].forEach(function(s) {
+    (d[s]||[]).forEach(function(book) {
+      var k = norm(book['제목']);
+      if (!map[k]) map[k] = {title: book['제목'], publisher: book['출판사'], yes24:[], aladin:[], kyobo:[]};
+      // 굿즈 컬럼
+      if (book['굿즈']) {
+        var parts = book['굿즈'].split(/\s*\+\s*|\s*\|\s*/);
+        parts.forEach(function(p){ if(p.trim()) map[k][s].push({text:p.trim(), type:catGoods(p)}); });
+      }
+      // 이벤트 컬럼 (교보)
+      if (book['이벤트']) {
+        var evParts = book['이벤트'].split(' | ');
+        evParts.forEach(function(e){ if(e.trim()) map[k][s].push({text:e.trim(), type:'event'}); });
+      }
+    });
+  });
+  return map;
+}
+
+// ─────────────────────────────────────────
+// 공통 진입 타이틀
+// ─────────────────────────────────────────
+function getOverlap() {
+  var d = S.data['데이터'];
+  var maps = {};
+  ['yes24','aladin','kyobo'].forEach(function(s) {
+    maps[s] = {};
+    (d[s]||[]).forEach(function(b){ maps[s][norm(b['제목'])] = b; });
+  });
+  var res = [];
+  Object.keys(maps['yes24']).forEach(function(k) {
+    if (maps['aladin'][k] && maps['kyobo'][k]) {
+      res.push({
+        k, title: maps['yes24'][k]['제목'],
+        publisher: maps['yes24'][k]['출판사'],
+        yes24: +maps['yes24'][k]['순위'],
+        aladin: +maps['aladin'][k]['순위'],
+        kyobo: +maps['kyobo'][k]['순위']
+      });
+    }
+  });
+  return res.sort(function(a,b){ return (a.yes24+a.aladin+a.kyobo)-(b.yes24+b.aladin+b.kyobo); });
+}
+
+// ─────────────────────────────────────────
+// 탭/스토어 전환
+// ─────────────────────────────────────────
+function switchTab(t) {
+  S.tab = t;
+  document.querySelectorAll('.tab').forEach(function(el, i) {
+    el.classList.toggle('active', ['rank','goods','compare'][i]===t);
+  });
+  render();
+}
+function switchStore(s) {
+  S.store = s;
+  document.querySelectorAll('.sbtn').forEach(function(el) { el.classList.remove('on'); });
+  document.querySelector('.sbtn.'+s).classList.add('on');
+  renderRankView();
+}
+
+// ─────────────────────────────────────────
+// 메인 렌더
+// ─────────────────────────────────────────
+function render() {
+  if (!S.data) return;
+  var app = document.getElementById('app');
+
+  if (S.tab === 'rank') {
+    app.innerHTML = renderKPIs() + renderStoreBar() + '<div id="rank-panels"></div>';
+    document.querySelector('.sbtn.'+S.store).classList.add('on');
+    renderRankView();
+  } else if (S.tab === 'goods') {
+    app.innerHTML = renderGoodsTab();
+  } else {
+    app.innerHTML = renderCompareTab();
+  }
+}
+
+// ─────────────────────────────────────────
+// KPI
+// ─────────────────────────────────────────
+function renderKPIs() {
+  var d = S.data['데이터'];
+  var allT = new Set();
+  ['yes24','aladin','kyobo'].forEach(function(s){ (d[s]||[]).forEach(function(b){ allT.add(norm(b['제목'])); }); });
+  var overlap = getOverlap();
+  var gmap = buildGoodsMap();
+  var withGoods = Object.values(gmap).filter(function(g){ return (g.yes24.length||g.aladin.length||g.kyobo.length); }).length;
+  var newCount = ['yes24','aladin','kyobo'].reduce(function(acc,s){ return acc + (d[s]||[]).filter(function(b){ return b['순위변동']==='NEW'; }).length; }, 0);
+
+  return '<div class="kpis" style="margin-top:16px">' +
+    kpiCard('3서점 공통 진입', overlap.length+'', '타이틀') +
+    kpiCard('전체 타이틀', allT.size+'', '중복 제거') +
+    kpiCard('굿즈 보유', withGoods+'', '타이틀') +
+    kpiCard('신규 진입', newCount+'', '이번 수집') +
+  '</div>';
+}
+function kpiCard(lbl, val, sub) {
+  return '<div class="kpi"><div class="lbl">'+lbl+'</div><div class="val">'+val+'</div><div class="sub">'+sub+'</div></div>';
+}
+
+// ─────────────────────────────────────────
+// 스토어 바
+// ─────────────────────────────────────────
+function renderStoreBar() {
+  return '<div class="store-bar">' +
+    '<div class="sbtn all on" onclick="switchStore(\'all\')">전체 비교</div>' +
+    '<div class="sbtn yes" onclick="switchStore(\'yes24\')">예스24</div>' +
+    '<div class="sbtn ala" onclick="switchStore(\'aladin\')">알라딘</div>' +
+    '<div class="sbtn kyo" onclick="switchStore(\'kyobo\')">교보문고</div>' +
+  '</div>';
+}
+
+// ─────────────────────────────────────────
+// 순위 뷰
+// ─────────────────────────────────────────
+function renderRankView() {
+  var el = document.getElementById('rank-panels');
+  if (!el) return;
+  var gmap = buildGoodsMap();
+  var d = S.data['데이터'];
+
+  if (S.store === 'all') {
+    el.innerHTML = '<div class="g3" style="margin-top:14px">' +
+      miniList('예스24', 'yes24', d['yes24']||[], gmap, 'ctag-yes') +
+      miniList('알라딘', 'aladin', d['aladin']||[], gmap, 'ctag-ala') +
+      miniList('교보문고', 'kyobo', d['kyobo']||[], gmap, 'ctag-kyo') +
+    '</div>';
+  } else {
+    var sMap = {yes24:'예스24',aladin:'알라딘',kyobo:'교보문고'};
+    var cMap = {yes24:'ctag-yes',aladin:'ctag-ala',kyobo:'ctag-kyo'};
+    el.innerHTML = '<div class="g2" style="margin-top:14px">' +
+      fullList(sMap[S.store], S.store, d[S.store]||[], gmap, cMap[S.store]) +
+      pubChart(S.store, d[S.store]||[]) +
+    '</div>';
+  }
+}
+
+function miniList(name, store, books, gmap, tagCls) {
+  var rows = books.slice(0,15).map(function(b,i) {
+    var k = norm(b['제목']);
+    var g = gmap[k] ? (gmap[k][store]||[]) : [];
+    var gtags = g.slice(0,2).map(function(x){ return goodsTagHtml(x.text,22); }).join('');
+    var ch = b['순위변동']||'';
+    return '<li>' +
+      '<span class="brank '+rankCls(i)+'">'+(i+1)+'</span>' +
+      '<div class="binfo">' +
+        '<div class="btitle" title="'+b['제목']+'">'+b['제목'].slice(0,18)+'</div>' +
+        '<div class="bmeta">'+b['출판사']+'</div>' +
+        (gtags?'<div class="bgoods">'+gtags+'</div>':'') +
+      '</div>' +
+      '<span class="bchange '+changeCls(ch)+'">'+ch+'</span>' +
+    '</li>';
+  }).join('');
+  return '<div class="card"><div class="card-title">'+name+' TOP15 <span class="ctag '+tagCls+'">'+name.toUpperCase()+'</span></div><ul class="book-list">'+rows+'</ul></div>';
+}
+
+function fullList(name, store, books, gmap, tagCls) {
+  var rows = books.slice(0,30).map(function(b,i) {
+    var k = norm(b['제목']);
+    var g = gmap[k] ? (gmap[k][store]||[]) : [];
+    var gtags = g.map(function(x){ return goodsTagHtml(x.text,32); }).join('');
+    var newTag = b['순위변동']==='NEW' ? '<span class="gtag gt-new">NEW</span>' : '';
+    var ch = b['순위변동']||'';
+    return '<li>' +
+      '<span class="brank '+rankCls(i)+'">'+(i+1)+'</span>' +
+      '<div class="binfo">' +
+        '<div class="btitle" title="'+b['제목']+'">'+b['제목']+'</div>' +
+        '<div class="bmeta">'+b['출판사']+(b['저자']?' · '+b['저자']:'')+'</div>' +
+        '<div class="bgoods">'+newTag+gtags+'</div>' +
+      '</div>' +
+      '<span class="bchange '+changeCls(ch)+'">'+ch+'</span>' +
+    '</li>';
+  }).join('');
+  return '<div class="card"><div class="card-title">'+name+' TOP30 <span class="ctag '+tagCls+'">'+store.toUpperCase()+'</span></div><ul class="book-list">'+rows+'</ul></div>';
+}
+
+function pubChart(store, books) {
+  var pm = {};
+  books.slice(0,20).forEach(function(b){ pm[b['출판사']]=(pm[b['출판사']]||0)+1; });
+  var sorted = Object.entries(pm).sort(function(a,b){return b[1]-a[1];}).slice(0,7);
+  var max = sorted[0]?sorted[0][1]:1;
+  var bars = sorted.map(function(x) {
+    var pct = (x[1]/max*100).toFixed(0);
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:11px">' +
+      '<span style="width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--sub)">'+x[0]+'</span>' +
+      '<div style="flex:1;height:6px;background:var(--border);border-radius:3px">' +
+        '<div style="width:'+pct+'%;height:6px;background:var(--accent);border-radius:3px"></div>' +
+      '</div>' +
+      '<span style="width:20px;text-align:right;color:#c4b5fd;font-weight:700">'+x[1]+'</span>' +
+    '</div>';
+  }).join('');
+  return '<div class="card"><div class="card-title">출판사 점유율 (TOP20 기준)</div>'+bars+'</div>';
+}
+
+// ─────────────────────────────────────────
+// 굿즈 탭
+// ─────────────────────────────────────────
+function renderGoodsTab() {
+  var gmap = buildGoodsMap();
+  var overlap = getOverlap();
+  var overlapKeys = overlap.map(function(o){return o.k;});
+  var allKeys = Object.keys(gmap);
+  var sorted = overlapKeys.filter(function(k){return gmap[k];})
+    .concat(allKeys.filter(function(k){return overlapKeys.indexOf(k)===-1;}))
+    .slice(0,25);
+
+  var goodsKPI = renderGoodsKPI(gmap);
+
+  var cards = sorted.map(function(key, idx) {
+    var g = gmap[key];
+    if (!g) return '';
+    var isOverlap = overlapKeys.indexOf(key) !== -1;
+    var badge = isOverlap ? ' <span style="font-size:9px;background:#1e3a5f;color:#60a5fa;padding:1px 6px;border-radius:8px;font-weight:600">3서점 공통</span>' : '';
+
+    var storeBlocks = [['yes24','예스24','sn-yes'],['aladin','알라딘','sn-ala'],['kyobo','교보문고','sn-kyo']].map(function(cfg) {
+      var sid=cfg[0], sname=cfg[1], scls=cfg[2];
+      var items = g[sid]||[];
+      var content = items.length
+        ? items.map(function(x){ return '<div class="gitem '+(x.type==='event'?'ev':x.type==='limit'?'lm':'')+'" title="'+x.text+'">'+x.text.slice(0,40)+(x.text.length>40?'…':'')+'</div>'; }).join('')
+        : '<div class="gitem no">정보 없음</div>';
+      return '<div class="gstore"><div class="gstore-name '+scls+'">'+sname+'</div>'+content+'</div>';
+    }).join('');
+
+    return '<div class="gcard">' +
+      '<div class="gcard-hdr">' +
+        '<span class="gcard-rank">'+(idx+1)+'</span>' +
+        '<div><div class="gcard-name">'+g.title+badge+'</div><div class="gcard-pub">'+g.publisher+'</div></div>' +
+      '</div>' +
+      '<div class="gcard-stores">'+storeBlocks+'</div>' +
+    '</div>';
+  }).join('');
+
+  return '<div style="margin-top:16px">'+goodsKPI+
+    '<div class="card" style="margin-bottom:12px"><div class="card-title">🎁 타이틀별 굿즈·이벤트 현황 <span style="font-size:10px;color:var(--muted);font-weight:400">3서점 비교 | 공통 진입 타이틀 우선</span></div>'+cards+'</div></div>';
+}
+
+function renderGoodsKPI(gmap) {
+  var withGoods = 0, limitCnt = 0, eventCnt = 0, multiStore = 0;
+  Object.values(gmap).forEach(function(g) {
+    var has = (g.yes24.length||g.aladin.length||g.kyobo.length);
+    if (has) withGoods++;
+    var storeCount = (g.yes24.length?1:0)+(g.aladin.length?1:0)+(g.kyobo.length?1:0);
+    if (storeCount >= 2) multiStore++;
+    ['yes24','aladin','kyobo'].forEach(function(s){
+      (g[s]||[]).forEach(function(x){ if(x.type==='limit')limitCnt++; if(x.type==='event')eventCnt++; });
+    });
+  });
+  return '<div class="kpis">' +
+    kpiCard('굿즈·이벤트 보유', withGoods+'', '타이틀') +
+    kpiCard('한정판·초판특전', limitCnt+'', '건') +
+    kpiCard('이벤트·사은품', eventCnt+'', '건') +
+    kpiCard('2서점 이상 굿즈', multiStore+'', '타이틀') +
+  '</div>';
+}
+
+// ─────────────────────────────────────────
+// 비교 탭
+// ─────────────────────────────────────────
+function renderCompareTab() {
+  var overlap = getOverlap();
+  var gmap = buildGoodsMap();
+  var d = S.data['데이터'];
+
+  // 공통 진입 테이블
+  var rows = overlap.slice(0,15).map(function(item, i) {
+    var g = gmap[item.k];
+    var allG = g ? (g.yes24||[]).concat(g.aladin||[]).concat(g.kyobo||[]) : [];
+    var gSummary = allG.length ? goodsTagHtml(allG[0].text, 18)+(allG.length>1?' <span style="font-size:9px;color:var(--muted)">+'+( allG.length-1)+'</span>':'') : '';
+    return '<tr>' +
+      '<td><span class="brank '+rankCls(i)+'">'+(i+1)+'</span></td>' +
+      '<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px" title="'+item.title+'">'+item.title.slice(0,20)+'</td>' +
+      '<td style="font-size:10px;color:var(--muted)">'+item.publisher+'</td>' +
+      '<td><span class="pos p-yes">'+item.yes24+'위</span></td>' +
+      '<td><span class="pos p-ala">'+item.aladin+'위</span></td>' +
+      '<td><span class="pos p-kyo">'+item.kyobo+'위</span></td>' +
+      '<td>'+gSummary+'</td>' +
+    '</tr>';
+  }).join('');
+
+  var overlapTable = '<div class="card" style="margin-bottom:12px">' +
+    '<div class="card-title">🏆 3개 서점 공통 진입 타이틀 ('+overlap.length+'개)</div>' +
+    '<table class="overlap-tbl"><thead><tr><th>#</th><th>제목</th><th>출판사</th><th class="p-yes">예스24</th><th class="p-ala">알라딘</th><th class="p-kyo">교보</th><th>굿즈</th></tr></thead><tbody>'+rows+'</tbody></table>' +
+  '</div>';
+
+  // 서점 간 겹침 막대 차트
+  var yn = new Set((d['yes24']||[]).slice(0,10).map(function(b){return norm(b['제목']);}));
+  var an = new Set((d['aladin']||[]).slice(0,10).map(function(b){return norm(b['제목']);}));
+  var kn = new Set((d['kyobo']||[]).slice(0,10).map(function(b){return norm(b['제목']);}));
+  var ya=0,yk=0,ak=0,all=0;
+  yn.forEach(function(t){ if(an.has(t)){ya++;} if(kn.has(t)){yk++;} if(an.has(t)&&kn.has(t)){all++;} });
+  an.forEach(function(t){ if(kn.has(t)){ak++;} });
+
+  var overlapBars = [
+    {lbl:'예스↔알라딘', val:ya, col:'#818cf8'},
+    {lbl:'예스↔교보',  val:yk, col:'#34d399'},
+    {lbl:'알라딘↔교보', val:ak, col:'#38bdf8'},
+    {lbl:'3개 모두',   val:all,col:'#f59e0b'}
+  ].map(function(item) {
+    var pct = (item.val/10*100).toFixed(0);
+    return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;font-size:12px;border-bottom:1px solid var(--border)">' +
+      '<span style="width:100px;color:var(--sub)">'+item.lbl+'</span>' +
+      '<div style="flex:1;height:8px;background:var(--border);border-radius:4px">' +
+        '<div style="width:'+pct+'%;height:8px;background:'+item.col+';border-radius:4px"></div>' +
+      '</div>' +
+      '<span style="width:24px;text-align:right;font-weight:700;color:'+item.col+'">'+item.val+'</span>' +
+    '</div>';
+  }).join('');
+
+  var overlapChart = '<div class="card" style="margin-bottom:12px">' +
+    '<div class="card-title">📊 서점별 TOP10 겹침 수</div>' +
+    overlapBars +
+  '</div>';
+
+  // CSV 다운로드 버튼
+  var csvBtn = '<div style="text-align:right;margin-bottom:12px">' +
+    '<button onclick="exportCSV()" style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">📥 CSV 내보내기</button>' +
+  '</div>';
+
+  return '<div style="margin-top:16px">'+csvBtn+'<div class="g2">'+overlapTable+overlapChart+'</div></div>';
+}
+
+// ─────────────────────────────────────────
+// CSV 내보내기
+// ─────────────────────────────────────────
+function exportCSV() {
+  var d = S.data['데이터'];
+  var rows = [['서점','순위','제목','출판사','저자','굿즈','이벤트','순위변동']];
+  ['yes24','aladin','kyobo'].forEach(function(s) {
+    var sName = s==='yes24'?'예스24':s==='aladin'?'알라딘':'교보문고';
+    (d[s]||[]).forEach(function(b) {
+      rows.push([sName, b['순위'], b['제목'], b['출판사'], b['저자']||'', b['굿즈']||'', b['이벤트']||'', b['순위변동']||'']);
+    });
+  });
+  var csv = rows.map(function(r){ return r.map(function(c){ return '"'+(c||'').toString().replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = '만화베스트셀러_'+S.data['수집시각'].replace(/[: ]/g,'-')+'.csv';
+  a.click();
+}
+
+// ─────────────────────────────────────────
+// 시작
+// ─────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
