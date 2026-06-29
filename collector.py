@@ -196,72 +196,115 @@ def scrape_aladin(now):
     return books
 
 # ────────────────────────────────────────────
-# 교보문고 만화 베스트 + 상세 이벤트
+# 교보문고 만화 베스트 (Playwright 탭 클릭 방식)
 # ────────────────────────────────────────────
-KYOBO_URL = "https://store.kyobobook.co.kr/bestseller/online/daily?categoryCode=0301"
+KYOBO_BASE = "https://store.kyobobook.co.kr/bestseller/online/daily"
 
-def parse_kyobo_list(html, now):
-    soup = BeautifulSoup(html, "html.parser")
+def scrape_kyobo(now):
+    """
+    교보문고는 Next.js SPA라 URL 파라미터로 카테고리 필터가 안 됨.
+    Playwright로 페이지를 열고 만화 카테고리 탭을 직접 클릭한 뒤 DOM을 파싱.
+    """
+    print("  교보문고 수집 중 (Playwright 탭 클릭 방식)...")
     books = []
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        ctx = browser.new_context(user_agent=(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        ))
+        page = ctx.new_page()
+
+        # 1) 베스트셀러 페이지 로드
+        page.goto(KYOBO_BASE, timeout=30000)
+        page.wait_for_timeout(4000)
+
+        # 2) 만화 카테고리 탭 클릭
+        # 카테고리 탭 텍스트가 "만화" 또는 "만화/라이트노벨"인 버튼/링크 클릭
+        clicked = False
+        for selector in [
+            'button:has-text("만화")',
+            'a:has-text("만화")',
+            '[class*="tab"]:has-text("만화")',
+            'li:has-text("만화")',
+        ]:
+            try:
+                el = page.locator(selector).first
+                if el.count() > 0:
+                    el.click()
+                    page.wait_for_timeout(3000)
+                    clicked = True
+                    print("    만화 탭 클릭 성공")
+                    break
+            except Exception:
+                continue
+
+        if not clicked:
+            print("    만화 탭 클릭 실패 — 전체 베스트에서 만화 키워드 필터링")
+
+        # 3) 필요시 더보기 클릭 (30권 확보)
+        for _ in range(3):
+            try:
+                more_btn = page.locator('button:has-text("더보기"), button:has-text("더 보기")').first
+                if more_btn.count() > 0:
+                    more_btn.click()
+                    page.wait_for_timeout(1500)
+            except Exception:
+                break
+
+        # 4) DOM 파싱
+        html = page.content()
+        browser.close()
+
+    soup = BeautifulSoup(html, "html.parser")
     seen = set()
     rank = 0
+
+    # 만화 관련 출판사 키워드 (탭 클릭 실패 시 필터로 사용)
+    MANGA_PUB = {'대원씨아이', '대원', '학산문화사', '학산', '소미미디어',
+                 '서울미디어코믹스', '디앤씨미디어', 'YNK미디어', '문학동네',
+                 '시공사', '동학사', '애니북스', '길찾기', '대원'}
 
     for a in soup.find_all('a', href=True):
         href = a['href']
         if not re.search(r'product\.kyobobook\.co\.kr/detail/S\d+', href):
             continue
         title = a.get_text(strip=True)
-        if not title or len(title) < 2 or title in ('새창보기', '미리보기') or len(title) > 100:
+        if not title or len(title) < 2 or title in ('새창보기', '미리보기', '') or len(title) > 100:
             continue
         if href in seen:
             continue
-        seen.add(href)
-        rank += 1
 
         parent = a.find_parent('li') or a.find_parent('tr') or a.parent
         parent_text = parent.get_text(strip=True) if parent else ''
-        pub_m = re.search(r'·\s*([가-힣a-zA-Z\(\)]+)\s*·', parent_text)
+
+        # 출판사 추출 (· 구분자)
+        pub_m = re.search(r'·\s*([가-힣a-zA-Z\(\)]+(?:씨아이|미디어|문화사|문고|동네|북스|코믹스)?)\s*·', parent_text)
         publisher = pub_m.group(1).strip() if pub_m else ''
+
+        # 탭 클릭 실패 시: 만화 출판사 필터 적용
+        if not clicked and publisher and publisher not in MANGA_PUB:
+            continue
+
+        seen.add(href)
+        rank += 1
+
+        # 이미지 URL (ISBN 기반)
+        isbn_m = re.search(r'(97[89]\d{10})', parent_text)
+        img_url = f"https://contents.kyobobook.co.kr/sih/fit-in/458x0/pdt/{isbn_m.group(1)}.jpg" if isbn_m else ''
 
         books.append({
             "수집시각": now, "순위": str(rank),
             "제목": title, "저자": "", "출판사": publisher,
             "굿즈": "", "이벤트": "",
-            "링크": href, "이미지URL": "",
+            "링크": href, "이미지URL": img_url,
             "이전순위": "", "순위변동": ""
         })
         if rank >= 30:
             break
-    return books
 
-def fetch_kyobo_events(detail_url):
-    """교보 상세 페이지에서 이벤트 정보 수집"""
-    try:
-        html = fetch_html_with_page(detail_url, wait_ms=3000)
-        soup = BeautifulSoup(html, "html.parser")
-        event_el = soup.select_one('.product_event')
-        if not event_el:
-            return ""
-        lines = [l.strip() for l in event_el.get_text().split('\n')
-                 if l.strip() and len(l.strip()) > 5 and len(l.strip()) < 150
-                 and '해외주문' not in l and '업체배송' not in l
-                 and '이 책의 이벤트' not in l]
-        return ' | '.join(lines[:4])
-    except Exception as e:
-        print(f"    교보 상세 실패: {e}")
-        return ""
-
-def scrape_kyobo(now):
-    print("  교보문고 목록 수집 중...")
-    html = fetch_html(KYOBO_URL, wait_ms=4500)
-    books = parse_kyobo_list(html, now)
-    print(f"  교보문고 목록 {len(books)}권, 이벤트 상세 수집 시작...")
-    for i, book in enumerate(books):
-        print(f"    [{i+1}/{len(books)}] {book['제목'][:20]}...")
-        events = fetch_kyobo_events(book['링크'])
-        book['이벤트'] = events
-        time.sleep(1.0)  # 서버 부하 방지
-    print(f"  교보문고 완료")
+    print(f"  교보문고 {len(books)}권 완료")
     return books
 
 # ────────────────────────────────────────────
