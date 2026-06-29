@@ -266,12 +266,15 @@ def scrape_kyobo(now):
                  '서울미디어코믹스', '디앤씨미디어', 'YNK미디어', '문학동네',
                  '시공사', '동학사', '애니북스', '길찾기', '대원'}
 
-    for a in soup.find_all('a', href=True):
-        href = a['href']
-        if not re.search(r'product\.kyobobook\.co\.kr/detail/S\d+', href):
+    # prod_link.line-clamp-2 = 실제 제목 링크 (새창보기·이미지 링크 자동 제외)
+    for a in soup.select('a.prod_link.line-clamp-2'):
+        href = a.get('href', '')
+        if not href or not re.search(r'product\.kyobobook\.co\.kr/detail/S\d+', href):
             continue
         title = a.get_text(strip=True)
-        if not title or len(title) < 2 or title in ('새창보기', '미리보기', '') or len(title) > 100:
+        # "예약판매" 등 앞붙은 뱃지 텍스트 제거
+        title = re.sub(r'^(예약판매|품절|절판)\s*', '', title).strip()
+        if not title or len(title) < 2 or len(title) > 100:
             continue
         if href in seen:
             continue
@@ -279,18 +282,15 @@ def scrape_kyobo(now):
         parent = a.find_parent('li') or a.find_parent('tr') or a.parent
         parent_text = parent.get_text(strip=True) if parent else ''
 
-        # 출판사 추출 (· 구분자)
-        pub_m = re.search(r'·\s*([가-힣a-zA-Z\(\)]+(?:씨아이|미디어|문화사|문고|동네|북스|코믹스)?)\s*·', parent_text)
+        pub_m = re.search(r'·\s*([가-힣a-zA-Z\(\)·]+?)\s*·', parent_text)
         publisher = pub_m.group(1).strip() if pub_m else ''
 
-        # 탭 클릭 실패 시: 만화 출판사 필터 적용
         if not clicked and publisher and publisher not in MANGA_PUB:
             continue
 
         seen.add(href)
         rank += 1
 
-        # 이미지 URL (ISBN 기반)
         isbn_m = re.search(r'(97[89]\d{10})', parent_text)
         img_url = f"https://contents.kyobobook.co.kr/sih/fit-in/458x0/pdt/{isbn_m.group(1)}.jpg" if isbn_m else ''
 
